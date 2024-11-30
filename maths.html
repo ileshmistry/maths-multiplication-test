@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiplication Practice</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    .container {
+      width: 300px;
+    }
+    #instructions, #timer, #feedback, #question, #results {
+      margin-bottom: 15px;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 1em;
+      margin-bottom: 15px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="instructions">
+      <h2>Multiplication Practice</h2>
+      <label>
+        Number of questions (max 100):
+        <input type="number" id="numQuestions" min="1" max="100" placeholder="Enter number of questions" required>
+      </label>
+      <label>
+        Range of numbers (e.g., 5 for 1-5):
+        <input type="number" id="maxRange" min="1" max="12" placeholder="Enter max range (1-12)" required>
+      </label>
+      <button onclick="startTest()">Start Test</button>
+    </div>
+    
+    <div id="timer"></div>
+    <div id="question"></div>
+    <input type="number" id="answerInput" placeholder="Type your answer" style="display: none;" onkeydown="handleEnter(event)">
+    <button id="nextButton" onclick="checkAnswer()" style="display: none;">Submit</button>
+    
+    <div id="feedback"></div>
+    <div id="results"></div>
+  </div>
+
+  <script>
+    let numQuestions;
+    let maxRange;
+    let questions = [];
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let countdown = 6;
+    let countdownInterval;
+    let results = [];
+
+    function startTest() {
+      numQuestions = parseInt(document.getElementById("numQuestions").value);
+      maxRange = parseInt(document.getElementById("maxRange").value);
+
+      if (isNaN(numQuestions) || isNaN(maxRange) || numQuestions <= 0 || maxRange < 1 || maxRange > 12) {
+        alert("Please enter valid numbers for the number of questions and range (1-12).");
+        return;
+      }
+
+      // Generate questions
+      questions = [];
+      results = [];
+      for (let i = 0; i < numQuestions; i++) {
+        const num1 = Math.floor(Math.random() * maxRange) + 1;
+        const num2 = Math.floor(Math.random() * maxRange) + 1;
+        questions.push({ num1, num2 });
+      }
+
+      // Hide setup elements and start the test
+      document.getElementById("instructions").style.display = "none";
+      document.getElementById("answerInput").style.display = "inline";
+      document.getElementById("nextButton").style.display = "inline";
+      document.getElementById("results").innerHTML = "";
+      currentQuestionIndex = 0;
+      score = 0;
+      nextQuestion();
+    }
+
+    function nextQuestion() {
+      clearInterval(countdownInterval);
+      countdown = 6;
+      updateTimer();
+      
+      if (currentQuestionIndex < questions.length) {
+        const { num1, num2 } = questions[currentQuestionIndex];
+        document.getElementById("question").innerText = `What is ${num1} x ${num2}?`;
+        document.getElementById("answerInput").value = "";
+        document.getElementById("answerInput").focus();
+        document.getElementById("feedback").innerText = "";
+
+        countdownInterval = setInterval(() => {
+          countdown--;
+          updateTimer();
+          if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            checkAnswer(true);  // Automatically check answer if time runs out
+          }
+        }, 1000);
+      } else {
+        endTest();
+      }
+    }
+
+    function checkAnswer(timeExpired = false) {
+      const answerInput = document.getElementById("answerInput");
+      const { num1, num2 } = questions[currentQuestionIndex];
+      const correctAnswer = num1 * num2;
+      const userAnswer = parseInt(answerInput.value);
+
+      let correct = false;
+      if (!timeExpired && userAnswer === correctAnswer) {
+        score++;
+        correct = true;
+        document.getElementById("feedback").innerText = "Correct!";
+        document.getElementById("feedback").style.color = "green";
+      } else {
+        document.getElementById("feedback").innerText = timeExpired ? "Time's up!" : "Incorrect!";
+        document.getElementById("feedback").style.color = "red";
+      }
+
+      // Store the result of the current question
+      results.push({
+        question: `${num1} x ${num2}`,
+        userAnswer: timeExpired ? "No answer (Time's up)" : (isNaN(userAnswer) ? "No answer" : userAnswer),
+        correctAnswer: correctAnswer,
+        isCorrect: correct
+      });
+
+      currentQuestionIndex++;
+      setTimeout(nextQuestion, 1000);
+    }
+
+    function handleEnter(event) {
+      if (event.key === "Enter") {
+        checkAnswer();
+      }
+    }
+
+    function updateTimer() {
+      document.getElementById("timer").innerText = `Time remaining: ${countdown}s`;
+    }
+
+    function endTest() {
+      document.getElementById("question").innerText = "";
+      document.getElementById("timer").innerText = "";
+      document.getElementById("answerInput").style.display = "none";
+      document.getElementById("nextButton").style.display = "none";
+      document.getElementById("feedback").innerText = "";
+      
+      // Display overall score and detailed results
+      document.getElementById("results").innerHTML = `<h3>Results</h3>
+        <p>You answered ${score} out of ${numQuestions} questions correctly.</p>
+        <h4>Detailed Results:</h4>`;
+
+      results.forEach((result, index) => {
+        const color = result.isCorrect ? "green" : "red";
+        document.getElementById("results").innerHTML += `
+          <p style="color: ${color}">
+            ${index + 1}. ${result.question} = ${result.userAnswer} 
+            ${result.isCorrect ? "(Correct)" : `(Incorrect, Correct Answer: ${result.correctAnswer})`}
+          </p>`;
+      });
+    }
+  </script>
+</body>
+</html>
